@@ -34,8 +34,8 @@ class NewsScrapper extends Command
     protected array $api_urls = [
 //        self::NEWS_API_URL => 'https://newsapi.org/v2/everything?q=all&from=2023-11-30&sortBy=publishedAt&apiKey=22ac936f07dd4fd0bdffc1b1c50c8da3',
 //        self::NEW_YORK_TIMES_URL => 'https://api.nytimes.com/svc/search/v2/articlesearch.json?q=all&&from=2023-12-03&page=100&api-key=ytswv1X906H5g9KrbeHB62FpCTFYsGk7'
-        self::NEWS_API_URL => 'https://newsapi.org/v2/everything?q=all&from=2023-11-30&sortBy=publishedAt&apiKey=22ac936f07dd4fd0bdffc1b1c50c8da3',
-        self::NEW_YORK_TIMES_URL => 'https://api.nytimes.com/svc/search/v2/articlesearch.json?q=all&from=2023-12-03&api-key=ytswv1X906H5g9KrbeHB62FpCTFYsGk7'
+        self::NEWS_API_URL => 'https://newsapi.org/v2/everything?q=all&from=2023-12-01&sortBy=publishedAt&apiKey=22ac936f07dd4fd0bdffc1b1c50c8da3',
+        self::NEW_YORK_TIMES_URL => 'https://api.nytimes.com/svc/search/v2/articlesearch.json?q=all&from=2023-12-02&api-key=ytswv1X906H5g9KrbeHB62FpCTFYsGk7'
     ];
     /**
      * Execute the console command.

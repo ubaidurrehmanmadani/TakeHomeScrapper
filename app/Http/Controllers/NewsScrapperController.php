@@ -53,7 +53,26 @@ class NewsScrapperController extends Controller
         }
     }
 
-    public function filter(Request $request){
+    public function filterData(Request $request){
+        $source = $request['source'] ?? null;
+        $author = $request['author'] ?? null;
+        $publishedAt = $request['published_at'] ?? null;
+        $query = Articles::query();
 
+        if ($source) {
+            $query->where('api_source_id', 'like', '%' . $source . '%');
+        }
+
+        if ($author) {
+            $query->where('author', 'like', '%' . $author . '%');
+        }
+
+        if ($publishedAt) {
+            $query->whereDate('published_at', '=', $publishedAt);
+        }
+
+        // Get the filtered posts
+        $articles = $query->select('article_json')->get();
+        return response()->json(['status' => "OK", 'data' => $articles]);
     }
 }

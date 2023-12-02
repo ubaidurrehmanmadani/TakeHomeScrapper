@@ -2,8 +2,12 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Controllers\NewsScrapperController;
+use App\Models\Articles;
+use Carbon\Carbon;
 use http\Client;
 use Illuminate\Console\Command;
+use Symfony\Component\VarDumper\VarDumper;
 use Weidner\Goutte\GoutteFacade;
 use Illuminate\Support\Facades\Http;
 
@@ -23,67 +27,44 @@ class NewsScrapper extends Command
      * @var string
      */
     protected $description = 'Command description';
-    const URL = "https://bankruptcy.gov.sa/eservices/api/recordsearchapi/";
-
-    public function fetchRecord() {
-        return Http::get(self::URL);
-    }
-
+    protected $from = '2023-12-03';
+    protected $to = null;
+    const NEWS_API_URL = 'handleNewsApiData';
+    const NEW_YORK_TIMES_URL = 'handleNewYorkTimeApiData';
+    protected array $api_urls = [
+//        self::NEWS_API_URL => 'https://newsapi.org/v2/everything?q=all&from=2023-11-30&sortBy=publishedAt&apiKey=22ac936f07dd4fd0bdffc1b1c50c8da3',
+//        self::NEW_YORK_TIMES_URL => 'https://api.nytimes.com/svc/search/v2/articlesearch.json?q=all&&from=2023-12-03&page=100&api-key=ytswv1X906H5g9KrbeHB62FpCTFYsGk7'
+        self::NEWS_API_URL => 'https://newsapi.org/v2/everything?q=all&from=2023-11-30&sortBy=publishedAt&apiKey=22ac936f07dd4fd0bdffc1b1c50c8da3',
+        self::NEW_YORK_TIMES_URL => 'https://api.nytimes.com/svc/search/v2/articlesearch.json?q=all&from=2023-12-03&api-key=ytswv1X906H5g9KrbeHB62FpCTFYsGk7'
+    ];
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $url          = 'https://newsapi.org/v2/everything?q=tesla&from=2023-10-30&sortBy=publishedAt&apiKey=22ac936f07dd4fd0bdffc1b1c50c8da3';
         $guzzleClient = new \GuzzleHttp\Client(['verify' => false]);
+        $newsAPIPagesCount = Articles::where('api_source_id', 1)->count();
+        $newYorkAPIPagesCount = Articles::where('api_source_id', 2)->count();
+        $urlExtension = null;
         try {
-            $response   = $guzzleClient->get($url)->getBody()->getContents();
-            dd($response);
-            $pages      = $this->_filterSelector('.PagerInfoCell', $response);
-            $pagesCount = (explode(' ', $pages[0]))[3];
-            $scrappedData      = [];
-            $scrappedCompanies = [];
-            $count             = 0;
-            $this->output->title("This Scraper will fetch data for " . $pagesCount . " pages.");
-            $this->output->progressStart($pagesCount);
-            for ($i = 1; $i <= $pagesCount; $i++) {
-                $url = 'https://eservices.chi.gov.sa/Pages/ClientSystem/Provider/SearchSPs.aspx?IsSearch=1&PageIndex=' . $i;
-                $guzzleClient = new \GuzzleHttp\Client(['verify' => false]);
-                $response = $guzzleClient->get($url)->getBody()->getContents();
-                $crawler = new Crawler($response);
-                $crawler->filter('#HCPtbl')->each(function (Crawler $crawler) use (&$scrappedData, &$count, &$i) {
-                    $crawler->filter('tr')->each(function (Crawler $row) use (&$scrappedData, &$count, &$i) {
-                        $rowData = [];
-                        $row->filter('td')->each(function (Crawler $cell) use (&$rowData, &$count) {
-                            $rowData[] = $cell->text();
-                        });
-                        if (count($rowData) == 4 || count($rowData) == 2) {
-                            $arrangedData = $this->_rearrangeArray($rowData);
-                            if (isset($arrangedData)) {
-                                $scrappedData[$count] = $arrangedData;
-                                $count++;
-                            }
-                        }
-                    });
-                });
-                $scrappedData = array_filter($scrappedData);
-                foreach (array_chunk($scrappedData, 5) as $key => $company) {
-                    $scrappedCompanies[$key] = call_user_func_array('array_merge', $company);
-                    $existingCompanies = DahmanCompany::where('reg_no', $scrappedCompanies[$key]['reg_no'])->exists();
-                    if (!$existingCompanies)
-                        continue;
-                    else
-                        unset($scrappedCompanies[$key]);
+            foreach ($this->api_urls as $key => $url){
+                if($key == self::NEWS_API_URL){
+                    $urlExtension = '&page_number=' . $newsAPIPagesCount/100;
+                }else if($key == self::NEW_YORK_TIMES_URL){
+                    $urlExtension = '&page=' . $newYorkAPIPagesCount/10;
                 }
-                $this->output->progressAdvance();
+
+                $response   = $guzzleClient->get($url . $urlExtension)->getBody()->getContents();
+                $response = json_decode($response, true);
+//                dd($response);
+                (new NewsScrapperController())->handleAPIData($response, $key);
+
+
             }
-            $this->output->progressFinish();
-            if (isset($scrappedCompanies)) {
-                foreach (array_chunk($scrappedCompanies, 100) as $scrappedCompany)
-                    DahmanCompany::insert($scrappedCompany);
-                VarDumper::dump("Total " . count($scrappedCompanies) . " has been scrapped from web.");
-            } else
-                VarDumper::dump("Sorry! No new data has been scrapped");
+
+//            $this->output->title("This Scraper will fetch data for " . $pagesCount . " pages.");
+//            $this->output->progressStart($pagesCount);
+//            $this->output->progressFinish();
         }
         catch (\Exception $exception){
             VarDumper::dump($exception->getMessage());

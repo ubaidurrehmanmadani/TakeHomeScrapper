@@ -26,14 +26,10 @@ class NewsScrapper extends Command
      *
      * @var string
      */
-    protected $description = 'Command description';
-    protected $from = '2023-12-03';
-    protected $to = null;
+    protected $description = 'This Command Will get Data from two API sources, after each 10 minutes command will be executed and get data in chunks and save it in mysql';
     const NEWS_API_URL = 'handleNewsApiData';
     const NEW_YORK_TIMES_URL = 'handleNewYorkTimeApiData';
     protected array $api_urls = [
-//        self::NEWS_API_URL => 'https://newsapi.org/v2/everything?q=all&from=2023-11-30&sortBy=publishedAt&apiKey=22ac936f07dd4fd0bdffc1b1c50c8da3',
-//        self::NEW_YORK_TIMES_URL => 'https://api.nytimes.com/svc/search/v2/articlesearch.json?q=all&&from=2023-12-03&page=100&api-key=ytswv1X906H5g9KrbeHB62FpCTFYsGk7'
         self::NEWS_API_URL => 'https://newsapi.org/v2/everything?q=all&from=2023-12-01&sortBy=publishedAt&apiKey=22ac936f07dd4fd0bdffc1b1c50c8da3',
         self::NEW_YORK_TIMES_URL => 'https://api.nytimes.com/svc/search/v2/articlesearch.json?q=all&from=2023-12-02&api-key=ytswv1X906H5g9KrbeHB62FpCTFYsGk7'
     ];
@@ -53,16 +49,14 @@ class NewsScrapper extends Command
                 }else if($key == self::NEW_YORK_TIMES_URL){
                     $urlExtension = '&page=' . $newYorkAPIPagesCount/10;
                 }
-
+                $this->output->title("This Scraper will fetch data from " . $key );
                 $response   = $guzzleClient->get($url . $urlExtension)->getBody()->getContents();
                 $response = json_decode($response, true);
-//                dd($response);
                 (new NewsScrapperController())->handleAPIData($response, $key);
-
+                $this->output->title("This Processed for " . $key );
 
             }
 
-//            $this->output->title("This Scraper will fetch data for " . $pagesCount . " pages.");
 //            $this->output->progressStart($pagesCount);
 //            $this->output->progressFinish();
         }

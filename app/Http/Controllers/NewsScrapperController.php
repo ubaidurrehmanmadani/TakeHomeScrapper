@@ -11,9 +11,9 @@ class NewsScrapperController extends Controller
 
     public function handleAPIData($data, $apiType){
         if($apiType == NewsScrapper::NEWS_API_URL){
-            $this->createNewsAPIData($data);
+            return $this->createNewsAPIData($data);
         }else if($apiType == NewsScrapper::NEW_YORK_TIMES_URL){
-            $this->createNewYorkTimesAPIData($data);
+            return $this->createNewYorkTimesAPIData($data);
         }
     }
 
@@ -33,6 +33,7 @@ class NewsScrapperController extends Controller
                 Articles::create($data);
             }
         }
+        return ;
     }
 
     public function createNewYorkTimesAPIData($data){
@@ -42,6 +43,7 @@ class NewsScrapperController extends Controller
                     'api_source_id' =>  '2',
                     'source' => $article['source'] ?? null,
                     'author' => $article['byline']['original'],
+                    'categories' => json_encode(collect($article['keywords'])->where('name', 'subject')->pluck('value')->toArray()),
                     'title' => $article['abstract'],
                     'description' => $article['snippet'],
                     'url' => $article['web_url'],
@@ -51,28 +53,11 @@ class NewsScrapperController extends Controller
                 Articles::create($data);
             }
         }
+        return ;
     }
 
     public function filterData(Request $request){
-        $source = $request['source'] ?? null;
-        $author = $request['author'] ?? null;
-        $publishedAt = $request['published_at'] ?? null;
-        $query = Articles::query();
-
-        if ($source) {
-            $query->where('api_source_id', 'like', '%' . $source . '%');
-        }
-
-        if ($author) {
-            $query->where('author', 'like', '%' . $author . '%');
-        }
-
-        if ($publishedAt) {
-            $query->whereDate('published_at', '=', $publishedAt);
-        }
-
-        // Get the filtered posts
-        $articles = $query->select('article_json')->get();
-        return response()->json(['status' => "OK", 'data' => $articles]);
+        $articles = Articles::getFilteredData($request);
+        return response()->json(['status' => "OK", 'meta' => ['count' => count($articles)], 'data' => $articles]);
     }
 }

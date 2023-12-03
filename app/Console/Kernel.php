@@ -13,6 +13,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
+        $schedule->command('app:news_scrapper')->everyTenMinutes()->withoutOverlapping()->sendOutputTo("storage/logs/scrapper.log", true); //done
     }
 
     /**

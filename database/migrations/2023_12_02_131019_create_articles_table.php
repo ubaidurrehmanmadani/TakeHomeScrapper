@@ -16,6 +16,7 @@ return new class extends Migration
             $table->bigInteger('api_source_id')->nullable();
             $table->string('source')->nullable();
             $table->string('author')->nullable();
+            $table->json('categories')->nullable();
             $table->mediumText('title')->nullable();
             $table->mediumText('description')->nullable();
             $table->string('url')->nullable();
